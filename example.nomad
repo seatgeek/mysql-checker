@@ -2,8 +2,8 @@ job "mysql-checker-job" {
   datacenters = ["dc1"]
   priority    = 50
 
-update {
-    max_parallel      = 500
+  update {
+    max_parallel      = 5
     health_check      = "checks"
     min_healthy_time  = "10s"
     healthy_deadline  = "1m"
@@ -15,16 +15,19 @@ update {
   }
 
   group "mysql-checker-group" {
-    count = 50
+    count = 10
 
     task "mysql-checker-task" {
       vault {
         policies = ["mysql-checker"]
       }
+
       driver       = "docker"
       kill_timeout = "1m"
+
       config {
         image = "seatgeek/mysql-checker"
+
         port_map {
           http = 8080
         }
@@ -36,34 +39,34 @@ update {
 MYSQL_USERNAME="{{ .Data.username }}"
 MYSQL_PASSWORD="{{ .Data.password }}"
 {{ end }}
-MYSQL_HOST="mysql.service.consul"
+MYSQL_HOST="mysql-server.service.consul"
 EOH
 
         destination = "secrets/secrets.env"
         env         = true
       }
 
-
       resources {
         cpu    = 20
         memory = 10
+
         network {
           mbits = 10
-          port "http" {}
+          port  "http"{}
         }
       }
-
 
       service {
         name = "mysql-checker"
         port = "http"
+
         check {
-          name     = "bandrei-mysql-checker"
-          type     = "http"
-          port     = "http"
-          path     = "/healthcheck"
-          interval = "5s"
-          timeout  = "3s"
+          name           = "mysql-checker"
+          type           = "http"
+          port           = "http"
+          path           = "/healthcheck"
+          interval       = "5s"
+          timeout        = "3s"
           initial_status = "warning"
         }
       }
